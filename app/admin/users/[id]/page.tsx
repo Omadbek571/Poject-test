@@ -54,9 +54,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       })
-      .then((res) => {
-        console.log(58, res);
-        
+      .then((res) => {        
         setUserInfo(res.data);
         setFormData({
           full_name: res.data.full_name || "",

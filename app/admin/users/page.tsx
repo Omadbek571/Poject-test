@@ -25,17 +25,12 @@ export default function UsersPage() {
         },
       })
       .then((res) => {
-        console.log(res)
         if (res.status === 200) {
-          setFoydalanuv(res.data.results)
-          console.log(31, res);
-          
+          setFoydalanuv(res.data.results)          
         }
       })
       .catch((err) => {
-        console.log(err)
-        console.log(35, err);
-        
+        console.log(err)        
       })
   }, [])
 
