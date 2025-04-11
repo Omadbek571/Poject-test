@@ -112,7 +112,6 @@ export default function AdminDashboard() {
         },
       })
       .then((res) => {
-        console.log(83, res.status);
         setPayments(res.data.results);
       })
       .catch((err) => {

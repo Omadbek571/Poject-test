@@ -14,7 +14,6 @@ export default function UsersPage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [foydalanuv, setFoydalanuv] = useState([])
-  console.log(foydalanuv)
 
   // API dan foydalanuvchilarni olish
   useEffect(() => {
@@ -29,10 +28,14 @@ export default function UsersPage() {
         console.log(res)
         if (res.status === 200) {
           setFoydalanuv(res.data.results)
+          console.log(31, res);
+          
         }
       })
       .catch((err) => {
         console.log(err)
+        console.log(35, err);
+        
       })
   }, [])
 

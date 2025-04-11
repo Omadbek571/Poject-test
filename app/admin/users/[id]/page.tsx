@@ -73,8 +73,10 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         if (callback) callback(res.data);
       })
       .catch((err) => {
-        console.log("Foydalanuvchi ma'lumotlarini olishda xatolik:", err);
-        alert("Foydalanuvchi ma'lumotlarini olishda xatolik yuz berdi!");
+        console.log(err);
+        console.log(77, err);
+        
+        
       })
       .finally(() => {
         setIsLoading(false);

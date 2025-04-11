@@ -13,6 +13,10 @@ import { useRouter } from "next/navigation"
 export default function SettingsPage() {
   const router = useRouter()
 
+  const userInfoLoc = localStorage.getItem("user")
+  console.log(17, userInfoLoc);
+  
+
   return (
     <AdminLayout>
       <div className="p-6">
