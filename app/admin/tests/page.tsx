@@ -14,7 +14,6 @@ export default function TestsPage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [testsCard, setTestCard] = useState([])
-  console.log(17, testsCard)
 
   useEffect(() => {
     axios
@@ -25,8 +24,6 @@ export default function TestsPage() {
         },
       })
       .then((res) => {
-        console.log(26, res)
-        console.log(27, res.data.results)
         setTestCard(res.data.results)
       })
       .catch((err) => {

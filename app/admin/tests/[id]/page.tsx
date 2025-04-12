@@ -69,24 +69,27 @@ export default function TestDetailPage() {
       })
   }, [testId]) // testId o'zgarganda faqat ishlaydi
 
-  console.log(72, Number(testId));
+    // Test statistic malumotlarini olish  shu qismi qolib ketga
+    useEffect(() => {
+      if (!testId) return
   
-
-  useEffect(() => {
-    axios
-      .get(`https://testonline.pythonanywhere.com/api/admin/tests/${Number(testId)}/participants/`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-      .then((res) => {
-        console.log(72, res)
-      })
-      .catch((err) => {
-        console.log(err)
-      })
-  }, [])
+      axios
+        .get(`https://testonline.pythonanywhere.com/api/admin/tests/${Number(testId)}/participants/`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        })
+        .then((res) => {
+          console.log(84, res);
+          
+        })
+        .catch((err) => {
+          console.log(err);
+          
+        })
+    }, [testId])
+  
 
   // Mock test data
   const testData = {
@@ -107,7 +110,7 @@ export default function TestDetailPage() {
   }
 
   // Mock questions data
-  const questionsData = Array.from({ length: 5 }).map((_, index) => ({
+  const questionsData = Array.from({ length: 2 }).map((_, index) => ({
     id: 1000 + index,
     text: `Savol ${index + 1}: ${index % 2 === 0 ? "Agar x^2 + 3x + 2 = 0 bo'lsa, x ning qiymati nima?" : "Agar y = 2x + 3 va x = 4 bo'lsa, y ning qiymati nima?"}`,
     options: [
@@ -121,7 +124,7 @@ export default function TestDetailPage() {
   }))
 
   // Mock users data
-  const usersData = Array.from({ length: 5 }).map((_, index) => ({
+  const usersData = Array.from({ length: 2 }).map((_, index) => ({
     id: 2000 + index,
     name: `Foydalanuvchi ${index + 1}`,
     date: new Date(Date.now() - index * 24 * 60 * 60 * 1000).toISOString(),
