@@ -32,7 +32,6 @@ export default function AdminDashboard() {
       })
       .then((res) => {
         setStatistic(res.data)
-        
       })
       .catch((err) => {
         if (err.response.data.detail === 'Given token not valid for any token type') {
@@ -43,13 +42,15 @@ export default function AdminDashboard() {
         console.log(err);
       });
   }, [token])
+  
 
   const usersStatistic = {
-    totalUsers: statistic.total_users, 
-    activeStudents: statistic.active_students, 
-    totalTests: statistic.total_tests_taken, 
-    totalRevenue: statistic.total_revenue
+    totalUsers: statistic?.total_users?.value, 
+    activeStudents: statistic?.active_students?.value, 
+    totalTests: statistic?.total_tests_taken?.value, 
+    totalRevenue: statistic?.total_revenue?.value
   }
+  
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -169,6 +170,7 @@ export default function AdminDashboard() {
                 <div>
                   <p className="text-sm text-gray-500">Jami testlar</p>
                   <h3 className="text-3xl font-bold">{usersStatistic.totalTests}</h3>
+
                 </div>
                 <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
                   <FileText className="h-6 w-6 text-amber-600" />
@@ -187,6 +189,7 @@ export default function AdminDashboard() {
                 <div>
                   <p className="text-sm text-gray-500">Jami daromad</p>
                   <h3 className="text-3xl font-bold">{usersStatistic.totalRevenue}</h3>
+
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
                   <Wallet className="h-6 w-6 text-purple-600" />
@@ -474,3 +477,4 @@ export default function AdminDashboard() {
     </AdminLayout>
   );
 }
+

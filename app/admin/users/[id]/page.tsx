@@ -1,6 +1,5 @@
 "use client"
 
-// Kerakli kutubxonalar va komponentlarni import qilish
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -11,25 +10,24 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, BarChart2, FileText, Mail, Phone, Save, User, Wallet } from "lucide-react";
-import { AdminLayout } from "@/components/admin/admin-layout"; // Named import sifatida o'zgartirildi
+import { AdminLayout } from "@/components/admin/admin-layout";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
-import { use } from "react";
 
 // Komponentning interfeysi
 interface UserDetailPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>; // params Promise sifatida aniqlanadi
 }
 
 export default function UserDetailPage({ params }: UserDetailPageProps) {
   const router = useRouter();
-  const resolvedParams = use(params);
-  const userId = resolvedParams.id;
+  const [userId, setUserId] = useState<string | null>(null); // userId ni state sifatida aniqlaymiz
   const [activeTab, setActiveTab] = useState("profile");
   const [userInfo, setUserInfo] = useState<any>({});
   const [isLoading, setIsLoading] = useState(false);
   const [paymentsHistoryUser, setPaymentsHistory] = useState<any[]>([]);
   const [statistichis, setStatistichis] = useState<any[]>([]);
+  const [token, setToken] = useState<string | null>(null); // Token uchun state
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -44,17 +42,43 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     status: "Faol",
   });
 
+  // params ni hal qilish uchun useEffect ishlatamiz
+  useEffect(() => {
+    const resolveParams = async () => {
+      const resolvedParams = await params; // params ni await qilamiz
+      setUserId(resolvedParams.id); // userId ni state ga o‘rnatamiz
+    };
+
+    resolveParams();
+  }, [params]);
+
+  // Tokenni olish
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedToken = localStorage.getItem("token");
+      setToken(storedToken);
+    }
+  }, []);
+
   // Foydalanuvchi ma'lumotlarini API'dan olish
   const fetchUserData = (callback?: (data: any) => void) => {
+    if (!token) {
+      alert("Tizimga kirish uchun token topilmadi. Iltimos, qayta kiring.");
+      router.push("/");
+      return;
+    }
+
+    if (!userId) return; // userId hali aniqlanmagan bo‘lsa, so‘rov yubormaymiz
+
     setIsLoading(true);
     axios
       .get(`https://testonline.pythonanywhere.com/api/admin/users/${Number(userId)}/`, {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       })
-      .then((res) => {        
+      .then((res) => {
         setUserInfo(res.data);
         setFormData({
           full_name: res.data.full_name || "",
@@ -71,10 +95,14 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         if (callback) callback(res.data);
       })
       .catch((err) => {
-        console.log(err);
-        console.log(77, err);
-        
-        
+        console.log("Foydalanuvchi ma'lumotlarini olishda xatolik:", err);
+        if (err.response?.status === 401) {
+          alert("Avtorizatsiya xatosi: Token noto‘g‘ri yoki muddati o‘tgan. Iltimos, qayta kiring.");
+          localStorage.removeItem("token");
+          router.push("/");
+        } else {
+          alert("Foydalanuvchi ma'lumotlarini olishda xatolik yuz berdi!");
+        }
       })
       .finally(() => {
         setIsLoading(false);
@@ -83,11 +111,13 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
 
   // Foydalanuvchi to'lov tarixini olish
   const fetchPaymentsHistory = () => {
+    if (!token || !userId) return;
+
     axios
       .get(`https://testonline.pythonanywhere.com/api/admin/users/${Number(userId)}/payment-history/`, {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       })
       .then((res) => {
@@ -97,16 +127,23 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       })
       .catch((err) => {
         console.log("To'lov tarixini olishda xatolik:", err);
+        if (err.response?.status === 401) {
+          alert("Avtorizatsiya xatosi: Token noto‘g‘ri yoki muddati o‘tgan. Iltimos, qayta kiring.");
+          localStorage.removeItem("token");
+          router.push("/");
+        }
       });
   };
 
   // Foydalanuvchi statistikasini olish
   const fetchStatistics = () => {
+    if (!token || !userId) return;
+
     axios
       .get(`https://testonline.pythonanywhere.com/api/admin/users/${Number(userId)}/statistics/`, {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       })
       .then((res) => {
@@ -114,15 +151,27 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       })
       .catch((err) => {
         console.log("Statistika olishda xatolik:", err);
+        if (err.response?.status === 401) {
+          alert("Avtorizatsiya xatosi: Token noto‘g‘ri yoki muddati o‘tgan. Iltimos, qayta kiring.");
+          localStorage.removeItem("token");
+          router.push("/");
+        }
       });
   };
 
   // Komponent yuklanganda ma'lumotlarni olish
   useEffect(() => {
-    fetchUserData();
-    fetchPaymentsHistory();
-    fetchStatistics();
-  }, [userId]);
+    if (token && userId) {
+      fetchUserData();
+      fetchPaymentsHistory();
+      fetchStatistics();
+    }
+  }, [token, userId]);
+
+  // userId hali aniqlanmagan bo‘lsa, loading ko‘rsatamiz
+  if (!userId) {
+    return <div className="p-6 text-center">Yuklanmoqda...</div>;
+  }
 
   const userData = {
     id: userId,
@@ -130,9 +179,9 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     phone: userInfo.phone_number || "",
     email: userInfo.email || "",
     registrationDate: new Date().toISOString(),
-    status: "Faol",
-    role: "Abituriyent",
-    balance: userInfo.balance || 0,
+    status: formData.status || "Faol",
+    role: userInfo.role_display || "Student",
+    balance: userInfo.balance ?? 0,
     address: userInfo.address || "",
     school: userInfo.study_place || "",
     grade: userInfo.grade || "",
@@ -142,6 +191,8 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     averageScore: 78,
     notes: userInfo.about_me || "",
   };
+
+  
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -187,7 +238,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       )
@@ -200,7 +251,13 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       })
       .catch((error) => {
         console.error("Yangilashda xatolik:", error);
-        alert("Ma'lumotlarni yangilashda xatolik yuz berdi!");
+        if (error.response?.status === 401) {
+          alert("Avtorizatsiya xatosi: Token noto‘g‘ri yoki muddati o‘tgan. Iltimos, qayta kiring.");
+          localStorage.removeItem("token");
+          router.push("/");
+        } else {
+          alert("Ma'lumotlarni yangilashda xatolik yuz berdi!");
+        }
       })
       .finally(() => {
         setIsLoading(false);
@@ -208,16 +265,95 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   };
 
   const handleBlockUser = () => {
-    alert("Foydalanuvchi bloklandi");
+    if (!token) {
+      alert("Tizimga kirish uchun token topilmadi. Iltimos, qayta kiring.");
+      router.push("/");
+      return;
+    }
+
+    setIsLoading(true);
+    axios
+      .post(
+        `https://testonline.pythonanywhere.com/api/admin/users/${Number(userId)}/block/`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      .then((res) => {
+        alert("Foydalanuvchi muvaffaqiyatli bloklandi!");
+        fetchUserData(); // Ma'lumotlarni yangilash
+      })
+      .catch((err) => {
+        console.log("Bloklashda xatolik:", err);
+        if (err.response?.status === 401) {
+          alert("Avtorizatsiya xatosi: Token noto‘g‘ri yoki muddati o‘tgan. Iltimos, qayta kiring.");
+          localStorage.removeItem("token");
+          router.push("/");
+        } else {
+          alert("Foydalanuvchi bloklashda xatolik yuz berdi!");
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+
+  const handleUnblockUser = () => {
+    if (!token) {
+      alert("Tizimga kirish uchun token topilmadi. Iltimos, qayta kiring.");
+      router.push("/");
+      return;
+    }
+
+    setIsLoading(true);
+    axios
+      .post(
+        `https://testonline.pythonanywhere.com/api/admin/users/${Number(userId)}/unblock/`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      .then((res) => {
+        alert("Foydalanuvchi muvaffaqiyatli blokdan ochildi!");
+        fetchUserData(); // Ma'lumotlarni yangilash
+      })
+      .catch((err) => {
+        console.log("Blokdan ochishda xatolik:", err);
+        if (err.response?.status === 401) {
+          alert("Avtorizatsiya xatosi: Token noto‘g‘ri yoki muddati o‘tgan. Iltimos, qayta kiring.");
+          localStorage.removeItem("token");
+          router.push("/");
+        } else {
+          alert("Foydalanuvchi blokdan ochishda xatolik yuz berdi!");
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const handleDeleteUser = () => {
+    if (!token) {
+      alert("Tizimga kirish uchun token topilmadi. Iltimos, qayta kiring.");
+      router.push("/");
+      return;
+    }
+
     if (confirm("Haqiqatan ham bu foydalanuvchini o'chirmoqchimisiz?")) {
+      setIsLoading(true);
       axios
         .delete(`https://testonline.pythonanywhere.com/api/admin/users/${Number(userId)}/`, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         })
         .then((res) => {
@@ -226,11 +362,20 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         })
         .catch((err) => {
           console.log("O'chirishda xatolik:", err);
-          alert("Foydalanuvchi o'chirishda xatolik yuz berdi!");
+          if (err.response?.status === 401) {
+            alert("Avtorizatsiya xatosi: Token noto‘g‘ri yoki muddati o‘tgan. Iltimos, qayta kiring.");
+            localStorage.removeItem("token");
+            router.push("/");
+          } else {
+            alert("Foydalanuvchi o'chirishda xatolik yuz berdi!");
+          }
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
     }
   };
-  
+
   return (
     <AdminLayout>
       <div className="p-6">
@@ -247,10 +392,13 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
             </div>
           </div>
           <div className="flex space-x-2">
-            <Button variant="outline" onClick={handleBlockUser}>
+            <Button variant="outline" onClick={handleUnblockUser} disabled={isLoading}>
+              Blokdan ochish
+            </Button>
+            <Button variant="outline" onClick={handleBlockUser} disabled={isLoading}>
               Bloklash
             </Button>
-            <Button variant="destructive" onClick={handleDeleteUser}>
+            <Button variant="destructive" onClick={handleDeleteUser} disabled={isLoading}>
               O'chirish
             </Button>
           </div>
@@ -387,6 +535,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                         <User className="h-12 w-12 text-blue-600" />
                       </div>
                       <h3 className="text-xl font-bold mb-1">{userData.name}</h3>
+                      {/* //////////////////////////// test-1 */}
                       <Badge className="mb-4">{userData.role}</Badge>
                       <div className="w-full space-y-2">
                         <div className="flex items-center">
