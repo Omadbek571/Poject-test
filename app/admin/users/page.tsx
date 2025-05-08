@@ -67,9 +67,6 @@ export default function UsersPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button variant="outline">
-                <Download className="mr-2 h-4 w-4" /> Hisobot
-              </Button>
             </div>
           </CardContent>
         </Card>

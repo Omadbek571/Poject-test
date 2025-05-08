@@ -5,10 +5,25 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { BarChart2, BookOpen, FileText, Home, LogOut, Settings, Users, Wallet } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
+import { useState, useEffect } from "react"
+
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
   const { logout } = useAuth()
+  const [email, setEmail] = useState("")
+  const [role, setRole] = useState("")
+  
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user")
+    if (storedUser) {
+      const user = JSON.parse(storedUser)
+      setEmail(user.email || "")
+      setRole(user.role || "")
+    }
+  }, [])
+  
+  const oneLetter = role[0]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -75,11 +90,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                 </Button>
                 <div className="flex items-center">
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
-                    <span className="font-medium text-blue-700">A</span>
+                    <span className="font-medium text-blue-700">{oneLetter || 0}</span>
                   </div>
                   <div>
-                    <div className="text-sm font-medium">SuperAdmin</div>
-                    <div className="text-xs text-gray-500">admin@bilimdon.uz</div>
+                    {/* //////////////////////////////////////////////////////////// */}
+                    <div className="text-sm font-medium">{role || "user"}</div>
+                    <div className="text-xs text-gray-500">{email || "email@gmail.com"}</div>
                   </div>
                 </div>
               </div>

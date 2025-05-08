@@ -16,8 +16,8 @@ import Link from "next/link" // react-router-dom o'rniga next/link dan foydalani
 
 export function LoginForm() {
   const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState("shohjaxon2006@gmail.com")
+  const [password, setPassword] = useState("20062006")
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)

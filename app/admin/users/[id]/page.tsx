@@ -28,6 +28,9 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   const [paymentsHistoryUser, setPaymentsHistory] = useState<any[]>([]);
   const [statistichis, setStatistichis] = useState<any[]>([]);
   const [token, setToken] = useState<string | null>(null); // Token uchun state
+  // /////////////////////////
+  const [test, setTest] = useState([])
+
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -59,6 +62,27 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       setToken(storedToken);
     }
   }, []);
+
+  // ///////////////////////////////////////////////////////////////////
+  // useEffect(() =>{
+  //   axios.get(`https://testonline.pythonanywhere.com/api/admin/users/${Number(userId)}/test-history/`, {
+  //     headers:{
+  //       "Content-Type":"application/json", 
+  //       Authorization:`Bearer ${localStorage.getItem("token")}`
+  //     }
+  //   })
+  //   .then((res) =>{
+  //     console.log(74, res);
+      
+  //   })
+  //   .catch((err) =>{
+  //     console.log(err);
+      
+  //   })
+  // }, [])
+  
+  // ///////////////////////////////////////////////////////////////////
+
 
   // Foydalanuvchi ma'lumotlarini API'dan olish
   const fetchUserData = (callback?: (data: any) => void) => {
@@ -122,7 +146,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       })
       .then((res) => {
         if (res.status === 200) {
-          setPaymentsHistory(res.data.results || []);
+          setPaymentsHistory(res.data || []);
         }
       })
       .catch((err) => {
@@ -595,6 +619,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                         </tr>
                       </thead>
                       <tbody>
+                        {/* ///////////////////////////////////////////////////////// */}
                         <tr className="border-t">
                           <td className="p-3">#1000</td>
                           <td className="p-3">Test 1</td>

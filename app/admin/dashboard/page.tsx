@@ -14,13 +14,13 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [userCard, setUserCard] = useState([]);
   const [testCard, setTestCard] = useState([]);
-  const [statistic, setStatistic] = useState([]);  
+  const [statistic, setStatistic] = useState([]);
   const [payments, setPayments] = useState([]);
   const [token, setToken] = useState<string | null>(null); // Token uchun state qo'shamiz
 
 
   // Statisticalardi olish uchun
-  useEffect(() =>{
+  useEffect(() => {
     if (!token) return;
 
     axios
@@ -42,15 +42,32 @@ export default function AdminDashboard() {
         console.log(err);
       });
   }, [token])
-  
+
 
   const usersStatistic = {
-    totalUsers: statistic?.total_users?.value, 
-    activeStudents: statistic?.active_students?.value, 
-    totalTests: statistic?.total_tests_taken?.value, 
-    totalRevenue: statistic?.total_revenue?.value
+    totalUsers: {
+      value: statistic?.total_users?.value,
+      change: statistic?.total_users?.change_percentage,
+      target: statistic?.total_users?.target
+    },
+    activeStudents: {
+      value: statistic?.active_students?.value,
+      change: statistic?.active_students?.change_percentage,
+      target: statistic?.active_students?.target
+    },
+    totalTests: {
+      value: statistic?.total_tests_taken?.value,
+      change: statistic?.total_tests_taken?.change_percentage,
+      target: statistic?.total_tests_taken?.target
+    },
+    totalRevenue: {
+      value: statistic?.total_revenue?.value,
+      change: statistic?.total_revenue?.change_percentage,
+      target: statistic?.total_revenue?.target
+    }
   }
-  
+
+
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -133,14 +150,14 @@ export default function AdminDashboard() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm text-gray-500">Jami foydalanuvchilar</p>
-                  <h3 className="text-3xl font-bold">{usersStatistic.totalUsers}</h3>
+                  <h3 className="text-3xl font-bold">{usersStatistic.totalUsers.value || 0}</h3>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                   <Users className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
               <div className="mt-4 text-sm text-green-600 flex items-center">
-                <span>+0% o'sish</span>
+                <span>+{usersStatistic.totalUsers.change_percentage || 0}% o'sish</span>
                 <ChevronRight className="h-4 w-4 ml-1" />
               </div>
             </CardContent>
@@ -151,14 +168,14 @@ export default function AdminDashboard() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm text-gray-500">Faol abituriyentlar</p>
-                  <h3 className="text-3xl font-bold">{usersStatistic.activeStudents}</h3>
+                  <h3 className="text-3xl font-bold">{usersStatistic.activeStudents.value || 0}</h3>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                   <Users className="h-6 w-6 text-green-600" />
                 </div>
               </div>
               <div className="mt-4 text-sm text-green-600 flex items-center">
-                <span>+0% o'sish</span>
+                <span>+{usersStatistic.activeStudents.change || 0}% o'sish</span>
                 <ChevronRight className="h-4 w-4 ml-1" />
               </div>
             </CardContent>
@@ -169,7 +186,7 @@ export default function AdminDashboard() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm text-gray-500">Jami testlar</p>
-                  <h3 className="text-3xl font-bold">{usersStatistic.totalTests}</h3>
+                  <h3 className="text-3xl font-bold">{usersStatistic.totalTests.value || 0}</h3>
 
                 </div>
                 <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
@@ -177,7 +194,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="mt-4 text-sm text-green-600 flex items-center">
-                <span>+0% o'sish</span>
+                <span>+{usersStatistic.totalTests.change || 0}% o'sish</span>
                 <ChevronRight className="h-4 w-4 ml-1" />
               </div>
             </CardContent>
@@ -188,7 +205,7 @@ export default function AdminDashboard() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm text-gray-500">Jami daromad</p>
-                  <h3 className="text-3xl font-bold">{usersStatistic.totalRevenue}</h3>
+                  <h3 className="text-3xl font-bold">{usersStatistic.totalRevenue.value || 0}</h3>
 
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
@@ -196,7 +213,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="mt-4 text-sm text-green-600 flex items-center">
-                <span>+0% o'sish</span>
+                <span>+{usersStatistic.totalRevenue.change || 0}% o'sish</span>
                 <ChevronRight className="h-4 w-4 ml-1" />
               </div>
             </CardContent>
@@ -333,30 +350,6 @@ export default function AdminDashboard() {
                             )
                           })
                         }
-                        {/* {Array.from({ length: 2 }).map((_, index) => (
-                          <tr key={index} className="border-t">
-                            <td className="p-3">#{2000 + index}</td>
-                            <td className="p-3">Test {index + 1}</td>
-                            <td className="p-3">
-                              {["Matematika", "Fizika", "Ingliz tili", "Tarix", "Ona tili"][index]}
-                            </td>
-                            <td className="p-3">{new Date().toLocaleDateString("uz-UZ")}</td>
-                            <td className="p-3">
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Faol
-                              </Badge>
-                            </td>
-                            <td className="p-3">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => router.push(`/admin/tests/${2000 + index}`)}
-                              >
-                                Ko'rish
-                              </Button>
-                            </td>
-                          </tr>
-                        ))} */}
                       </tbody>
                     </table>
                   </div>
@@ -395,53 +388,30 @@ export default function AdminDashboard() {
 
                         {
                           payments.length > 0 && payments.map(function (value, index) {
-                            return(
+                            return (
                               <tr key={index} className="border-t">
-                              <td className="p-3">#{value.id}</td>
-                              <td className="p-3">{value.user_email}</td>
-                              <td className="p-3">{value.amount_display} </td>
-                              <td className="p-3">{value.created_at}</td>
-                              <td className="p-3">
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                 {value.status_display}
-                                </Badge>
-                              </td>
-                              <td className="p-3">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => router.push(`/admin/payments/${value.id}`)}
-                                >
-                                  Ko'rish
-                                </Button>
-                              </td>
-                            </tr>
+                                <td className="p-3">#{value.id}</td>
+                                <td className="p-3">{value.user_email}</td>
+                                <td className="p-3">{value.amount_display} </td>
+                                <td className="p-3">{value.created_at}</td>
+                                <td className="p-3">
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                    {value.status_display}
+                                  </Badge>
+                                </td>
+                                <td className="p-3">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => router.push(`/admin/payments/${value.id}`)}
+                                  >
+                                    Ko'rish
+                                  </Button>
+                                </td>
+                              </tr>
                             )
                           })
                         }
-
-                        {/* {Array.from({ length: 2 }).map((_, index) => (
-                          <tr key={index} className="border-t">
-                            <td className="p-3">#{3000 + index}</td>
-                            <td className="p-3">Foydalanuvchi {index + 1}</td>
-                            <td className="p-3">{(10000 * (index + 1)).toLocaleString()} so'm</td>
-                            <td className="p-3">{new Date().toLocaleDateString("uz-UZ")}</td>
-                            <td className="p-3">
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Muvaffaqiyatli
-                              </Badge>
-                            </td>
-                            <td className="p-3">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => router.push(`/admin/payments/${3000 + index}`)}
-                              >
-                                Ko'rish
-                              </Button>
-                            </td>
-                          </tr>
-                        ))} */}
                       </tbody>
                     </table>
                   </div>

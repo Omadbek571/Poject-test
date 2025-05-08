@@ -9,12 +9,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Bell, Lock, Save, Server, Settings, Shield } from "lucide-react"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { useRouter } from "next/navigation"
+import { useEffect } from 'react';
+import axios from 'axios';
+
 
 export default function SettingsPage() {
   const router = useRouter()
 
   const userInfoLoc = localStorage.getItem("user")
   console.log(17, userInfoLoc);
+
+  useEffect(() =>{
+    axios.get(`https://testonline.pythonanywhere.com/api/profile/settings/`, {
+      headers:{
+        "Content-Type":"application/json", 
+        Authorization:`Bearer ${localStorage.getItem("token")}`
+      }
+    })
+    .then((res) =>{
+      console.log(30, res);
+      
+    })
+    .catch((err) =>{
+      console.log(err);
+      
+    })
+  }, [])
   
 
   return (
