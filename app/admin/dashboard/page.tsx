@@ -194,7 +194,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="mt-4 text-sm text-green-600 flex items-center">
-                <span>+{usersStatistic.totalTests.change || 0}% o'sish</span>
+                <span>{usersStatistic.totalTests.change || 0}% o'sish</span>
                 <ChevronRight className="h-4 w-4 ml-1" />
               </div>
             </CardContent>
@@ -213,7 +213,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="mt-4 text-sm text-green-600 flex items-center">
-                <span>+{usersStatistic.totalRevenue.change || 0}% o'sish</span>
+                <span>{usersStatistic.totalRevenue.change || 0}% o'sish</span>
                 <ChevronRight className="h-4 w-4 ml-1" />
               </div>
             </CardContent>

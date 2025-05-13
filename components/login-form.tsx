@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react" // useEffect endi kerak emas, agar redirect faqat AuthProvider da bo'lsa
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,71 +10,39 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Eye, EyeOff, Info } from "lucide-react"
-import axios from "axios"
-import Link from "next/link" // react-router-dom o'rniga next/link dan foydalanish
+import Link from "next/link"
+import { useAuth } from "@/components/auth-provider" // AuthProvider joylashuviga qarab o'zgartiring
 
 export function LoginForm() {
   const router = useRouter()
+  const { login, user, isLoading: authIsLoading } = useAuth(); // AuthProvider'dan login, user va isLoading ni oling
   const [email, setEmail] = useState("shohjaxon2006@gmail.com")
   const [password, setPassword] = useState("20062006")
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false) // Form submit bo'layotganini kuzatish uchun
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+  // Agar foydalanuvchi allaqachon tizimga kirgan bo'lsa va bu login sahifasi bo'lsa,
+  // AuthProvider ichidagi useEffect uni to'g'ri joyga yo'naltiradi.
+  // Shuning uchun bu yerda qo'shimcha redirect useEffect kerak emas.
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setLoading(true)
+    setIsSubmitting(true)
     setError("")
 
-    // inputlardagi malumotlar keldi
-    const userData = {
+    const success = await login({ // AuthProvider'dagi login funksiyasini chaqiramiz
       email: email,
       password: password,
+    })
+
+    if (!success) {
+      setError("Login yoki parol noto'g'ri yoki tizimda xatolik yuz berdi.")
     }
-
-    axios
-      .post("https://testonline.pythonanywhere.com/api/auth/login/", userData, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-      .then((res) => {
-        console.log(43,res);
-
-        if (res.status === 200) {
-          if (res.data.user.role === "admin") {
-            // Admin uchun
-            const userr = {
-              email: email,
-              password: password,
-              role: "superadmin",
-            }
-            localStorage.setItem("token", res.data.token)
-            localStorage.setItem("user", JSON.stringify(userr))
-            router.push("/admin/dashboard")
-          }
-          if (res.data.user.role === "student") {
-            // Student uchun - role applicant bo'lib saqlansin
-            const userr = {
-              email: email,
-              password: password,
-              role: "applicant", // Changed from "superadmin" to "applicant"
-            }
-            localStorage.setItem("token", res.data.access)
-            localStorage.setItem("user", JSON.stringify(userr))
-            router.push("/profile")
-          }
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        
-        setError("Login yoki parol notogri")
-      })
-      .finally(() => {
-        setLoading(false)
-      })
+    // Muvaffaqiyatli login bo'lsa, redirect AuthProvider ichidagi useEffect orqali amalga oshiriladi.
+    setIsSubmitting(false)
   }
+
   function handleRegisterPage() {
     router.push("/register")
   }
@@ -83,6 +50,18 @@ export function LoginForm() {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword)
   }
+
+  // Agar AuthProvider hali yuklanayotgan bo'lsa yoki foydalanuvchi allaqachon mavjud bo'lsa,
+  // login formani ko'rsatmaslik mumkin (ixtiyoriy)
+  // if (authIsLoading) {
+  //   return <div>Yuklanmoqda...</div>; // Yoki biror chiroyli loader
+  // }
+  // if (user && !authIsLoading) {
+  //   // Foydalanuvchi allaqachon tizimda, AuthProvider yo'naltiradi.
+  //   // Bu yerda hech narsa ko'rsatmaslik mumkin yoki loading.
+  //   return <div>Yo'naltirilmoqda...</div>;
+  // }
+
 
   return (
     <Card className="w-full shadow-lg">
@@ -101,10 +80,10 @@ export function LoginForm() {
             <form onSubmit={handleLogin}>
               <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="username">Email</Label>
+                  <Label htmlFor="email">Email</Label> {/* htmlFor "username" edi, "email" ga o'zgartirdim */}
                   <Input
                     id="email"
-                    placeholder="Loginni kiriting"
+                    placeholder="Email manzilingizni kiriting" // Placeholder o'zgartirildi
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -127,9 +106,9 @@ export function LoginForm() {
                       size="icon"
                       className="absolute right-0 top-0 h-full px-3"
                       onClick={togglePasswordVisibility}
+                      aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      <span className="sr-only">{showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}</span>
                     </Button>
                   </div>
                 </div>
@@ -141,8 +120,8 @@ export function LoginForm() {
                   </Alert>
                 )}
 
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Kirish..." : "Kirish"}
+                <Button type="submit" className="w-full" disabled={isSubmitting || authIsLoading}>
+                  {isSubmitting ? "Kirilmoqda..." : "Kirish"}
                 </Button>
               </div>
             </form>
@@ -159,21 +138,43 @@ export function LoginForm() {
                 <div className="border rounded-md p-4">
                   <h3 className="font-medium mb-2">SuperAdmin sifatida kirish</h3>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="font-medium">Login:</div>
+                    <div className="font-medium">Email:</div> {/* Login o'rniga Email */}
                     <div>shohjaxon2006@gmail.com </div>
                     <div className="font-medium">Parol:</div>
                     <div>20062006</div>
                   </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2 w-full"
+                    onClick={() => {
+                      setEmail("shohjaxon2006@gmail.com");
+                      setPassword("20062006");
+                    }}
+                  >
+                    Ma'lumotlarni to'ldirish
+                  </Button>
                 </div>
 
                 <div className="border rounded-md p-4">
                   <h3 className="font-medium mb-2">Abituriyent sifatida kirish</h3>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="font-medium">Login:</div>
+                    <div className="font-medium">Email:</div> {/* Login o'rniga Email */}
                     <div>user2@gmail.com</div>
                     <div className="font-medium">Parol:</div>
                     <div>user2006</div>
                   </div>
+                   <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2 w-full"
+                    onClick={() => {
+                      setEmail("user2@gmail.com");
+                      setPassword("user2006");
+                    }}
+                  >
+                    Ma'lumotlarni to'ldirish
+                  </Button>
                 </div>
               </div>
             </div>
@@ -191,4 +192,3 @@ export function LoginForm() {
     </Card>
   )
 }
-

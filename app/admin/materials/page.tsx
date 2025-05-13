@@ -24,13 +24,14 @@ export default function MaterialsPage() {
         },
       })
       .then((res) => {
-        console.log(28, res.data.results)
-        setMater(res.data.results) // Set the API data to the state
+        setMater(res.data.results) 
       })
       .catch((err) => {
         console.log(err)
       })
   }, [])
+
+console.log(mater);  
 
   // Filter materials based on search query
   const filteredMaterials = mater.filter(
@@ -101,11 +102,11 @@ export default function MaterialsPage() {
                       <tr key={material.id} className="border-t">
                         <td className="p-3">#{material.id}</td>
                         <td className="p-3">{material.title}</td>
-                        <td className="p-3">{material.subject_name}</td>
+                        <td className="p-3">{mater[0]?.subject?.name}</td>
                         <td className="p-3">{material.material_type}</td>
                         <td className="p-3">{material.file_format}</td>
                         <td className="p-3">{material.size_display}</td>
-                        <td className="p-3">{material.download_count}</td>
+                        <td className="p-3">{material.downloads_count}</td>
                         <td className="p-3">
                           <Badge
                             variant="outline"
