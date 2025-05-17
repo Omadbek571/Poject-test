@@ -378,7 +378,9 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        <Tabs defaultValue="stats" className="mb-6">
+        {/* ////////////// MANA SHU YERDA O'ZGARTIRILDI ////////////// */}
+        <Tabs defaultValue="users" className="mb-6">
+        {/* ///////////////////////////////////////////////////////// */}
           <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-4 mb-6">
             <TabsTrigger value="users">Foydalanuvchilar</TabsTrigger>
             <TabsTrigger value="tests">Testlar</TabsTrigger>

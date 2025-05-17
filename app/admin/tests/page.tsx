@@ -98,7 +98,7 @@ export default function TestsPage() {
                       filteredTests.map((test) => {
                         // Sanani formatlash
                         const date = new Date(test.created_at)
-                        const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`
+                        const formattedDate = `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getFullYear()}`
 
                         return (
                           <tr key={test.id} className="border-t">
@@ -121,13 +121,23 @@ export default function TestsPage() {
                               </Badge>
                             </td>
                             <td className="p-3">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => router.push(`/admin/tests/${test.id}`)}
-                              >
-                                Ko'rish
-                              </Button>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => router.push(`/admin/tests/${test.id}`)}
+                                >
+                                  Ko'rish
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                  onClick={() => router.push(`/admin/tests/${test.id}?tab=questions`)}
+                                >
+                                  Savollarni tahrirlash
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         )
