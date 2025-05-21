@@ -1,24 +1,50 @@
-"use client"
+"use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Bell, LogOut, Settings, Trophy, User } from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
-import { useRouter } from "next/navigation"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Bell, LogOut, Settings, Trophy, User } from "lucide-react";
+import { useAuth } from "@/components/auth-provider";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 export function ProfileHeader() {
-  const { logout } = useAuth()
-  const router = useRouter()
+  const { logout } = useAuth();
+  const router = useRouter();
 
-  // Mock user data
+  const [meInfo, setMeInfo] = useState<any | null>(null);
+
+  useEffect(() => {
+    axios
+      .get(`https://testonline.pythonanywhere.com/api/profile/me`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      })
+      .then((res) => {
+        setMeInfo(res.data);
+      })
+      .catch((err) => {
+        console.log("Xatolik:", err);
+      });
+  }, []);
+
   const user = {
-    name: "Alisher Karimov",
-    avatar: "/placeholder.svg?height=100&width=100",
-    role: "Abituriyent",
-    balance: 50000,
-    level: "Oltin",
-    joinDate: "2023-05-15",
+    name: meInfo?.full_name || "Ism kiritilmagan",
+    avatar: meInfo?.profile_picture || "/placeholder.svg?height=100&width=100",
+    role: meInfo?.role_display || "Foydalanuvchi",
+    balance: meInfo?.balance_display || "0 so'm",
+    level: `${meInfo?.rating?.level || 1}-daraja`,
+    joinDate: meInfo?.date_joined
+      ? meInfo.date_joined.split(" ")[0]
+      : "Noma'lum",
+    ratingRank: meInfo?.rating?.rank ?? 0,
+  };
+
+  if (!meInfo) {
+    return <div className="text-center p-10 text-white">Yuklanmoqda...</div>;
   }
 
   return (
@@ -43,7 +69,12 @@ export function ProfileHeader() {
             >
               <Settings size={20} />
             </Button>
-            <Button variant="destructive" size="sm" className="bg-red-500 hover:bg-red-600 text-white" onClick={logout}>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="bg-red-500 hover:bg-red-600 text-white"
+              onClick={logout}
+            >
               <LogOut size={16} className="mr-2" />
               Chiqish
             </Button>
@@ -68,9 +99,12 @@ export function ProfileHeader() {
 
               <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-4">
                 <div className="bg-white/20 rounded-full px-4 py-1 text-sm">
-                  A'zo bo'lgan: {new Date(user.joinDate).toLocaleDateString("uz-UZ")}
+                  A'zo bo'lgan:{" "}
+                  {new Date(user.joinDate).toLocaleDateString("uz-UZ")}
                 </div>
-                <div className="bg-yellow-500/80 rounded-full px-4 py-1 text-sm font-medium">{user.level} daraja</div>
+                <div className="bg-yellow-500/80 rounded-full px-4 py-1 text-sm font-medium">
+                  {user.level}
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -78,7 +112,7 @@ export function ProfileHeader() {
                   onClick={() => router.push("/rating")}
                 >
                   <Trophy className="mr-2 h-4 w-4" />
-                  Reyting: #42
+                  Reyting: #{user.ratingRank}
                 </Button>
               </div>
             </div>
@@ -86,9 +120,12 @@ export function ProfileHeader() {
             <div className="flex flex-col items-center md:items-end gap-2">
               <div className="bg-white/20 rounded-lg px-4 py-2">
                 <div className="text-sm">Balans</div>
-                <div className="text-xl font-bold">{user.balance.toLocaleString()} so'm</div>
+                <div className="text-xl font-bold">{user.balance}</div>
               </div>
-              <Button className="bg-white text-blue-700 hover:bg-blue-50" onClick={() => router.push("/profile/edit")}>
+              <Button
+                className="bg-white text-blue-700 hover:bg-blue-50"
+                onClick={() => router.push("/profile/edit")}
+              >
                 <User size={16} className="mr-2" />
                 Profilni tahrirlash
               </Button>
@@ -97,6 +134,5 @@ export function ProfileHeader() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
-

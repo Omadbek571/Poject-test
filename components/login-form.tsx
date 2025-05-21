@@ -16,15 +16,12 @@ import { useAuth } from "@/components/auth-provider" // AuthProvider joylashuvig
 export function LoginForm() {
   const router = useRouter()
   const { login, user, isLoading: authIsLoading } = useAuth(); // AuthProvider'dan login, user va isLoading ni oling
-  const [email, setEmail] = useState("shohjaxon2006@gmail.com")
-  const [password, setPassword] = useState("20062006")
+  const [email, setEmail] = useState("user2@gmail.com")
+  const [password, setPassword] = useState("user12345")
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false) // Form submit bo'layotganini kuzatish uchun
 
-  // Agar foydalanuvchi allaqachon tizimga kirgan bo'lsa va bu login sahifasi bo'lsa,
-  // AuthProvider ichidagi useEffect uni to'g'ri joyga yo'naltiradi.
-  // Shuning uchun bu yerda qo'shimcha redirect useEffect kerak emas.
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -162,7 +159,7 @@ export function LoginForm() {
                     <div className="font-medium">Email:</div> {/* Login o'rniga Email */}
                     <div>user2@gmail.com</div>
                     <div className="font-medium">Parol:</div>
-                    <div>user2006</div>
+                    <div>user12345</div>
                   </div>
                    <Button
                     size="sm"

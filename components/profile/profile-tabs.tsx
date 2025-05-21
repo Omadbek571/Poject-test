@@ -1,11 +1,17 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
+import { useState, useEffect } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   BarChart,
   BookOpen,
@@ -15,75 +21,372 @@ import {
   FileText,
   GraduationCap,
   History,
+  Loader2,
   Star,
   Wallet,
-} from "lucide-react"
-import { useRouter } from "next/navigation"
+  AlertCircle,
+  Settings,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+
+interface TestSubject {
+  id: number;
+  name: string;
+  icon?: string;
+}
+
+interface TestDetail {
+  id: number;
+  title: string;
+  subject: TestSubject;
+}
+
+interface TestHistoryItem {
+  id: number;
+  test: TestDetail;
+  score: number;
+  total_questions: number;
+  end_time: string;
+  start_time: string;
+  status_display: string;
+}
+
+interface MaterialSubject {
+  id: number;
+  name: string;
+}
+
+interface Material {
+  id: number;
+  title: string;
+  subject: MaterialSubject;
+  material_type: string;
+  format?: string;
+  size?: string;
+  price?: number;
+  is_free: boolean;
+  description?: string;
+  download_url: string;
+}
+
+interface Payment {
+  id: number;
+  created_at: string;
+  description: string;
+  payment_type: string;
+  payment_type_display?: string;
+  amount_display: string;
+  status: string;
+  status_display?: string;
+}
+
+interface UserProfile {
+  full_name?: string;
+  birth_date?: string;
+  phone_number?: string;
+  email?: string;
+  address?: string;
+  school?: string;
+  grade?: string;
+  target_university?: string;
+  target_faculty?: string;
+}
+
+interface UserSettings {
+  language?: string;
+  theme?: string;
+  notify_email?: boolean;
+  notify_sms?: boolean;
+  notify_push?: boolean;
+  two_factor_enabled?: boolean;
+  autoplay_videos?: boolean;
+}
+
+interface RecommendedTest {
+  id: number;
+  title: string;
+  subject: TestSubject;
+  test_type: string;
+  type_display: string;
+  question_count: number;
+  difficulty: string;
+  difficulty_display: string;
+  price: string;
+  price_display: string;
+  time_limit: number;
+  reward_points: number;
+  status: string;
+  status_display: string;
+  created_at: string;
+}
 
 export function ProfileTabs() {
-  const [activeTab, setActiveTab] = useState("overview")
-  const router = useRouter()
+  const [activeTab, setActiveTab] = useState("overview");
+  const router = useRouter();
+  const [testHistory, setTestHistory] = useState<TestHistoryItem[]>([]);
 
-  // Mock data
-  const recentTests = [
-    { id: 1, subject: "Matematika", title: "Algebra asoslari", score: 92, maxScore: 100, date: "2023-06-10" },
-    { id: 2, subject: "Fizika", title: "Mexanika", score: 85, maxScore: 100, date: "2023-06-08" },
-    { id: 3, subject: "Ingliz tili", title: "Grammar Test", score: 78, maxScore: 100, date: "2023-06-05" },
-    { id: 4, subject: "Ona tili", title: "Sintaksis", score: 95, maxScore: 100, date: "2023-06-03" },
-  ]
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [loadingMaterials, setLoadingMaterials] = useState<boolean>(true);
+  const [errorMaterials, setErrorMaterials] = useState<string | null>(null);
+  const [activeMaterialTypeFilter, setActiveMaterialTypeFilter] = useState<string>("all");
 
-  const recommendedTests = [
-    { id: 1, subject: "Matematika", title: "Trigonometriya", difficulty: "O'rta" },
-    { id: 2, subject: "Fizika", title: "Elektr va magnetizm", difficulty: "Qiyin" },
-    { id: 3, subject: "Ingliz tili", title: "Reading Comprehension", difficulty: "O'rta" },
-  ]
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState<boolean>(true);
+  const [errorPayments, setErrorPayments] = useState<string | null>(null);
+  const [activePaymentTypeFilter, setActivePaymentTypeFilter] = useState<string>("all");
 
-  const transactions = [
-    { id: 1, type: "Kirim", amount: 50000, description: "Hisobni to'ldirish", date: "2023-06-01" },
-    { id: 2, type: "Chiqim", amount: -15000, description: "Premium test sotib olish", date: "2023-06-03" },
-    { id: 3, type: "Chiqim", amount: -5000, description: "Qo'shimcha materiallar", date: "2023-06-07" },
-    { id: 4, type: "Kirim", amount: 10000, description: "Do'stni taklif qilish bonusi", date: "2023-06-09" },
-  ]
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
+  const [errorProfile, setErrorProfile] = useState<string | null>(null);
 
-  const personalInfo = {
-    fullName: "Alisher Karimov",
-    birthDate: "2005-03-15",
-    phone: "+998 90 123 45 67",
-    email: "alisher@example.com",
-    address: "Toshkent sh., Chilonzor tumani",
-    school: "5-son maktab",
-    grade: "11-sinf",
-    targetUniversity: "Toshkent Axborot Texnologiyalari Universiteti",
-    targetFaculty: "Dasturiy injiniring",
-  }
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [loadingSettings, setLoadingSettings] = useState<boolean>(true);
+  const [errorSettings, setErrorSettings] = useState<string | null>(null);
+
+  const [recommendedTests, setRecommendedTests] = useState<RecommendedTest[]>([]);
+  const [loadingRecommendedTests, setLoadingRecommendedTests] = useState<boolean>(true);
+  const [errorRecommendedTests, setErrorRecommendedTests] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      axios
+        .get(`https://testonline.pythonanywhere.com/api/profile/test-history/`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        .then((res) => {
+          setTestHistory(res.data.results || res.data);
+        })
+        .catch((err) => {
+          console.error("Test tarixi yuklashda xatolik:", err);
+        });
+    }
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setErrorMaterials("Materiallarni ko'rish uchun tizimga kiring.");
+      setLoadingMaterials(false);
+      return;
+    }
+    setLoadingMaterials(true);
+    setErrorMaterials(null);
+    const params: { material_type?: string } = {};
+    if (activeMaterialTypeFilter && activeMaterialTypeFilter !== "all") {
+      params.material_type = activeMaterialTypeFilter;
+    }
+    axios
+      .get(`https://testonline.pythonanywhere.com/api/materials/`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        params,
+      })
+      .then((res) => {
+        setMaterials(res.data.results || res.data);
+        setLoadingMaterials(false);
+      })
+      .catch((err) => {
+        console.error("Materiallarni yuklashda xatolik:", err);
+        setErrorMaterials(
+          "Materiallarni yuklashda xatolik yuz berdi."
+        );
+        setLoadingMaterials(false);
+      });
+  }, [activeMaterialTypeFilter]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setErrorPayments("To'lovlar tarixini ko'rish uchun tizimga kiring.");
+      setLoadingPayments(false);
+      return;
+    }
+    setLoadingPayments(true);
+    setErrorPayments(null);
+    const params: { payment_type?: string } = {};
+    if (activePaymentTypeFilter && activePaymentTypeFilter !== "all") {
+      params.payment_type = activePaymentTypeFilter;
+    }
+    axios
+      .get(`https://testonline.pythonanywhere.com/api/profile/payment-history/`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        params,
+      })
+      .then((res) => {
+        setPayments(res.data.results || res.data);
+        setLoadingPayments(false);
+      })
+      .catch((err) => {
+        console.error("To'lovlar tarixini yuklashda xatolik:", err);
+        setErrorPayments(
+          "To'lovlar tarixini yuklashda xatolik yuz berdi."
+        );
+        setLoadingPayments(false);
+      });
+  }, [activePaymentTypeFilter]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setErrorProfile("Shaxsiy ma'lumotlarni ko'rish uchun tizimga kiring.");
+      setLoadingProfile(false);
+      setErrorSettings("Sozlamalarni ko'rish uchun tizimga kiring.");
+      setLoadingSettings(false);
+      setErrorRecommendedTests("Tavsiya etilgan testlarni ko'rish uchun tizimga kiring.");
+      setLoadingRecommendedTests(false);
+      return;
+    }
+
+    setLoadingProfile(true);
+    setErrorProfile(null);
+    axios
+      .get(`https://testonline.pythonanywhere.com/api/profile/me/`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((res) => {
+        setUserProfile(res.data);
+        setLoadingProfile(false);
+      })
+      .catch((err) => {
+        console.error("Shaxsiy ma'lumotlarni yuklashda xatolik:", err);
+        setErrorProfile(
+          "Shaxsiy ma'lumotlarni yuklashda xatolik yuz berdi."
+        );
+        setLoadingProfile(false);
+         if (err.response?.data?.detail === "Given token not valid for any token type") {
+          localStorage.clear()
+          router.push("/")
+        }
+      });
+
+    setLoadingSettings(true);
+    setErrorSettings(null);
+    axios
+      .get(`https://testonline.pythonanywhere.com/api/profile/settings/`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((res) => {
+        setUserSettings(res.data);
+        setLoadingSettings(false);
+      })
+      .catch((err) => {
+        console.error("Sozlamalarni yuklashda xatolik:", err);
+        setErrorSettings(
+          "Sozlamalarni yuklashda xatolik yuz berdi."
+        );
+        setLoadingSettings(false);
+         if (err.response?.data?.detail === "Given token not valid for any token type") {
+          localStorage.clear()
+          router.push("/")
+        }
+      });
+    
+    setLoadingRecommendedTests(true);
+    setErrorRecommendedTests(null);
+    axios
+      .get(`https://testonline.pythonanywhere.com/api/profile/recommended-tests/`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        params: { limit: 3 } // Default 3 ta so'raymiz, o'zgartirish mumkin
+      })
+      .then((res) => {
+        setRecommendedTests(res.data || []);
+        setLoadingRecommendedTests(false);
+      })
+      .catch((err) => {
+        console.error("Tavsiya etilgan testlarni yuklashda xatolik:", err);
+        setErrorRecommendedTests(
+          "Tavsiya etilgan testlarni yuklashda xatolik yuz berdi."
+        );
+        setLoadingRecommendedTests(false);
+         if (err.response?.data?.detail === "Given token not valid for any token type") {
+          localStorage.clear()
+          router.push("/")
+        }
+      });
+
+  }, [router]);
+
 
   const handleStartTest = (testId: number) => {
-    router.push(`/tests/${testId}`)
-  }
+    router.push(`/tests/${testId}`);
+  };
 
   const handleViewTest = (testId: number) => {
-    router.push(`/tests/results/${testId}`)
-  }
+    router.push(`/tests/results/${testId}`);
+  };
 
-  const handleDownloadMaterial = (materialId: number) => {
-    // In a real app, this would download the file
-    alert(`Material ${materialId} yuklab olinmoqda...`)
-  }
+  const handleDownloadMaterial = (downloadUrl: string) => {
+    window.open(downloadUrl, "_blank");
+  };
 
   const handleAddFunds = (amount: number) => {
-    router.push(`/payments/add?amount=${amount}`)
-  }
+    router.push(`/payments/add?amount=${amount}`);
+  };
 
   const handleEditProfile = () => {
-    router.push("/profile/edit")
-  }
+    router.push("/profile/edit");
+  };
 
   const handleCreateSchedule = () => {
-    router.push("/schedule/create")
-  }
+    router.push("/schedule/create");
+  };
+
+  const handleUpdateSetting = async (settingKey: keyof UserSettings, value: any) => {
+    const token = localStorage.getItem("token");
+    if (!token || !userSettings) return;
+
+    const originalSettings = { ...userSettings };
+    const optimisticUserSettings = { ...userSettings, [settingKey]: value };
+    setUserSettings(optimisticUserSettings);
+
+    try {
+      const response = await axios.patch(
+        `https://testonline.pythonanywhere.com/api/profile/settings/`,
+        { [settingKey]: value },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setUserSettings(response.data);
+    } catch (error) {
+      console.error(`Error updating ${settingKey}:`, error);
+      setUserSettings(originalSettings);
+       if ((error as any).response?.data?.detail === "Given token not valid for any token type") {
+        localStorage.clear()
+        router.push("/")
+      }
+    }
+  };
+
 
   return (
-    <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
+    <Tabs
+      defaultValue="overview"
+      value={activeTab}
+      onValueChange={setActiveTab}
+    >
       <TabsList className="grid grid-cols-5 mb-6">
         <TabsTrigger value="overview">Umumiy</TabsTrigger>
         <TabsTrigger value="tests">Testlar</TabsTrigger>
@@ -103,32 +406,48 @@ export function ProfileTabs() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentTests.map((test) => (
-                  <div key={test.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center">
-                          <Badge variant="outline" className="mr-2">
-                            {test.subject}
-                          </Badge>
-                          <h3 className="font-medium">{test.title}</h3>
+                {testHistory.length > 0 ? (
+                  testHistory.map((item) => (
+                    <div key={item.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center">
+                            <Badge variant="outline" className="mr-2">
+                              {item.test.subject.name}
+                            </Badge>
+                            <h3 className="font-medium">{item.test.title}</h3>
+                          </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            {new Date(item.end_time).toLocaleDateString(
+                              "uz-UZ"
+                            )}
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          {new Date(test.date).toLocaleDateString("uz-UZ")}
+                        <div className="text-right">
+                          <div className="text-lg font-bold">
+                            {item.score}/{item.total_questions}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {Math.round(
+                              (item.score / item.total_questions) * 100
+                            )}
+                            %
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold">
-                          {test.score}/{test.maxScore}
-                        </div>
-                        <div className="text-sm text-gray-500">{Math.round((test.score / test.maxScore) * 100)}%</div>
+                      <div className="mt-2">
+                        <Progress
+                          value={(item.score / item.total_questions) * 100}
+                          className="h-2"
+                        />
                       </div>
                     </div>
-                    <div className="mt-2">
-                      <Progress value={(test.score / test.maxScore) * 100} className="h-2" />
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    Test tarixi hozircha mavjud emas.
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -139,27 +458,57 @@ export function ProfileTabs() {
                 <Star className="mr-2 h-5 w-5 text-amber-500" />
                 Tavsiya etilgan testlar
               </CardTitle>
-              <CardDescription>Sizning o'qish ko'rsatkichlaringizga asoslangan testlar</CardDescription>
+              <CardDescription>
+                Sizning o'qish ko'rsatkichlaringizga asoslangan testlar
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {recommendedTests.map((test) => (
-                  <Card key={test.id} className="border">
-                    <CardContent className="p-4">
-                      <Badge variant="outline" className="mb-2">
-                        {test.subject}
-                      </Badge>
-                      <h3 className="font-medium mb-1">{test.title}</h3>
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm text-gray-500">Qiyinlik: {test.difficulty}</div>
-                        <Button size="sm" variant="ghost" onClick={() => handleStartTest(test.id)}>
-                          Boshlash
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              {loadingRecommendedTests && (
+                <div className="flex justify-center items-center py-6">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                  <p className="ml-2 text-sm">Yuklanmoqda...</p>
+                </div>
+              )}
+              {errorRecommendedTests && !loadingRecommendedTests && (
+                <div className="flex flex-col justify-center items-center py-6 text-red-500">
+                  <AlertCircle className="h-6 w-6 mb-1" />
+                  <p className="text-sm">{errorRecommendedTests}</p>
+                </div>
+              )}
+              {!loadingRecommendedTests && !errorRecommendedTests && recommendedTests.length === 0 && (
+                 <div className="text-center py-6">
+                    <p className="text-gray-500 text-sm">Hozircha sizga tavsiya etilgan testlar mavjud emas.</p>
+                 </div>
+              )}
+              {!loadingRecommendedTests && !errorRecommendedTests && recommendedTests.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {recommendedTests.map((test) => (
+                    <Card key={test.id} className="border">
+                      <CardContent className="p-4">
+                        <Badge variant="outline" className="mb-2">
+                          {test.subject.name}
+                        </Badge>
+                        <h3 className="font-medium mb-1 text-base">{test.title}</h3>
+                        <div className="flex justify-between items-center">
+                          <div className="text-sm text-gray-500">
+                            {test.difficulty_display}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleStartTest(test.id)}
+                          >
+                            Boshlash
+                          </Button>
+                        </div>
+                         <div className="text-xs text-gray-400 mt-1">
+                            {test.question_count} savol, {test.time_limit} daq.
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -172,8 +521,14 @@ export function ProfileTabs() {
             </CardHeader>
             <CardContent>
               <div className="border rounded-lg p-4 text-center">
-                <p className="text-gray-500">Bu yerda sizning shaxsiy o'qish jadvalingiz bo'ladi</p>
-                <Button className="mt-4" variant="outline" onClick={handleCreateSchedule}>
+                <p className="text-gray-500">
+                  Bu yerda sizning shaxsiy o'qish jadvalingiz bo'ladi
+                </p>
+                <Button
+                  className="mt-4"
+                  variant="outline"
+                  onClick={handleCreateSchedule}
+                >
                   Jadval yaratish
                 </Button>
               </div>
@@ -195,18 +550,34 @@ export function ProfileTabs() {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => router.push("/tests/all")}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push("/tests/all")}
+                  >
                     Barchasi
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => router.push("/tests/completed")}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push("/tests/completed")}
+                  >
                     Tugatilgan
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => router.push("/tests/incomplete")}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push("/tests/incomplete")}
+                  >
                     Tugatilmagan
                   </Button>
                 </div>
                 <div>
-                  <Button variant="outline" size="sm" onClick={() => router.push("/tests/report")}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push("/tests/report")}
+                  >
                     <Download className="mr-2 h-4 w-4" />
                     Hisobot
                   </Button>
@@ -227,26 +598,46 @@ export function ProfileTabs() {
                       </tr>
                     </thead>
                     <tbody>
-                      {[...recentTests, ...recentTests].map((test, index) => (
-                        <tr key={index} className="border-t">
-                          <td className="p-3">{test.title}</td>
-                          <td className="p-3">{test.subject}</td>
-                          <td className="p-3">{new Date(test.date).toLocaleDateString("uz-UZ")}</td>
-                          <td className="p-3 font-medium">
-                            {test.score}/{test.maxScore}
-                          </td>
-                          <td className="p-3">
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                              <CheckCircle className="h-3 w-3 mr-1" /> Tugatilgan
-                            </Badge>
-                          </td>
-                          <td className="p-3">
-                            <Button variant="ghost" size="sm" onClick={() => handleViewTest(test.id)}>
-                              Ko'rish
-                            </Button>
+                      {testHistory.length > 0 ? (
+                        testHistory.map((testItem) => (
+                          <tr key={testItem.id} className="border-t">
+                            <td className="p-3">{testItem.test.title}</td>
+                            <td className="p-3">{testItem.test.subject.name}</td>
+                            <td className="p-3">
+                              {new Date(testItem.start_time).toLocaleDateString(
+                                "uz-UZ"
+                              )}
+                            </td>
+                            <td className="p-3 font-medium">
+                              {testItem.score}/{testItem.total_questions}
+                            </td>
+                            <td className="p-3">
+                              <Badge
+                                variant="outline"
+                                className="bg-green-50 text-green-700 border-green-200"
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />{" "}
+                                {testItem.status_display}
+                              </Badge>
+                            </td>
+                            <td className="p-3">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewTest(testItem.id)}
+                              >
+                                Ko'rish
+                              </Button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="p-4 text-center text-sm text-gray-500">
+                            Testlar tarixi mavjud emas.
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -263,120 +654,119 @@ export function ProfileTabs() {
               <BookOpen className="mr-2 h-5 w-5 text-blue-500" />
               O'quv materiallari
             </CardTitle>
-            <CardDescription>Sizga tavsiya etilgan va yuklab olingan materiallar</CardDescription>
+            <CardDescription>
+              Sizga tavsiya etilgan va yuklab olishingiz mumkin bo'lgan materiallar
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => router.push("/materials/all")}>
+                  <Button
+                    variant={activeMaterialTypeFilter === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setActiveMaterialTypeFilter("all");
+                    }}
+                  >
                     Barchasi
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => router.push("/materials/books")}>
+                  <Button
+                    variant={activeMaterialTypeFilter === "book" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setActiveMaterialTypeFilter("book");
+                    }}
+                  >
                     Kitoblar
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => router.push("/materials/videos")}>
+                  <Button
+                    variant={activeMaterialTypeFilter === "video" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setActiveMaterialTypeFilter("video");
+                    }}
+                  >
                     Video darslar
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => router.push("/materials/guides")}>
+                  <Button
+                    variant={activeMaterialTypeFilter === "guide" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setActiveMaterialTypeFilter("guide");
+                    }}
+                  >
                     Qo'llanmalar
                   </Button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="border">
-                  <CardContent className="p-4">
-                    <div className="flex items-start">
-                      <div className="w-16 h-20 bg-gray-100 rounded flex items-center justify-center mr-3">
-                        <FileText className="h-8 w-8 text-gray-400" />
-                      </div>
-                      <div className="flex-1">
-                        <Badge variant="outline" className="mb-1">
-                          Matematika
-                        </Badge>
-                        <h3 className="font-medium">Algebra va matematik analiz asoslari</h3>
-                        <div className="text-sm text-gray-500 mt-1">PDF, 245 bet</div>
-                        <div className="flex justify-between items-center mt-2">
-                          <div className="text-sm text-gray-500">Yuklab olingan: 10.06.2023</div>
-                          <Button size="sm" variant="ghost" onClick={() => handleDownloadMaterial(1)}>
-                            <Download className="h-4 w-4 mr-1" /> Yuklab olish
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              {loadingMaterials && (
+                <div className="flex justify-center items-center py-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  <p className="ml-2">Materiallar yuklanmoqda...</p>
+                </div>
+              )}
 
-                <Card className="border">
-                  <CardContent className="p-4">
-                    <div className="flex items-start">
-                      <div className="w-16 h-20 bg-gray-100 rounded flex items-center justify-center mr-3">
-                        <FileText className="h-8 w-8 text-gray-400" />
-                      </div>
-                      <div className="flex-1">
-                        <Badge variant="outline" className="mb-1">
-                          Fizika
-                        </Badge>
-                        <h3 className="font-medium">Mexanika bo'yicha masalalar to'plami</h3>
-                        <div className="text-sm text-gray-500 mt-1">PDF, 120 bet</div>
-                        <div className="flex justify-between items-center mt-2">
-                          <div className="text-sm text-gray-500">Yuklab olingan: 05.06.2023</div>
-                          <Button size="sm" variant="ghost" onClick={() => handleDownloadMaterial(2)}>
-                            <Download className="h-4 w-4 mr-1" /> Yuklab olish
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              {errorMaterials && !loadingMaterials && (
+                <div className="flex flex-col justify-center items-center py-10 text-red-600">
+                  <AlertCircle className="h-8 w-8 mb-2" />
+                  <p>{errorMaterials}</p>
+                </div>
+              )}
 
-                <Card className="border">
-                  <CardContent className="p-4">
-                    <div className="flex items-start">
-                      <div className="w-16 h-20 bg-gray-100 rounded flex items-center justify-center mr-3">
-                        <FileText className="h-8 w-8 text-gray-400" />
-                      </div>
-                      <div className="flex-1">
-                        <Badge variant="outline" className="mb-1">
-                          Ingliz tili
-                        </Badge>
-                        <h3 className="font-medium">Grammar in Use - Intermediate</h3>
-                        <div className="text-sm text-gray-500 mt-1">PDF, 180 bet</div>
-                        <div className="flex justify-between items-center mt-2">
-                          <div className="text-sm text-gray-500">Yuklab olingan: 01.06.2023</div>
-                          <Button size="sm" variant="ghost" onClick={() => handleDownloadMaterial(3)}>
-                            <Download className="h-4 w-4 mr-1" /> Yuklab olish
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              {!loadingMaterials && !errorMaterials && materials.length === 0 && (
+                 <div className="text-center py-10">
+                    <p className="text-gray-500">Hozircha materiallar mavjud emas.</p>
+                 </div>
+              )}
 
-                <Card className="border">
-                  <CardContent className="p-4">
-                    <div className="flex items-start">
-                      <div className="w-16 h-20 bg-gray-100 rounded flex items-center justify-center mr-3">
-                        <FileText className="h-8 w-8 text-gray-400" />
-                      </div>
-                      <div className="flex-1">
-                        <Badge variant="outline" className="mb-1">
-                          Tarix
-                        </Badge>
-                        <h3 className="font-medium">O'zbekiston tarixi - Test to'plami</h3>
-                        <div className="text-sm text-gray-500 mt-1">PDF, 95 bet</div>
-                        <div className="flex justify-between items-center mt-2">
-                          <div className="text-sm text-gray-500">Yuklab olingan: 28.05.2023</div>
-                          <Button size="sm" variant="ghost" onClick={() => handleDownloadMaterial(4)}>
-                            <Download className="h-4 w-4 mr-1" /> Yuklab olish
-                          </Button>
+              {!loadingMaterials && !errorMaterials && materials.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {materials.map((material) => (
+                    <Card key={material.id} className="border">
+                      <CardContent className="p-4">
+                        <div className="flex items-start">
+                          <div className="w-16 h-20 bg-gray-100 rounded flex items-center justify-center mr-3">
+                            <FileText className="h-8 w-8 text-gray-400" />
+                          </div>
+                          <div className="flex-1">
+                            <Badge variant="outline" className="mb-1">
+                              {material.subject.name}
+                            </Badge>
+                            <h3 className="font-medium">{material.title}</h3>
+                            {(material.format || material.size) && (
+                               <div className="text-sm text-gray-500 mt-1">
+                                {material.format}
+                                {material.format && material.size && ", "}
+                                {material.size}
+                              </div>
+                            )}
+                             <div className="text-sm text-gray-500 mt-1">
+                                {material.is_free ? "Bepul" : `Narxi: ${material.price || 0} so'm`}
+                            </div>
+                            <div className="flex justify-between items-center mt-2">
+                               <div className="text-sm text-gray-500">
+                                {material.material_type === "book" && "Kitob"}
+                                {material.material_type === "video" && "Video dars"}
+                                {material.material_type === "guide" && "Qo'llanma"}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDownloadMaterial(material.download_url)}
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                {material.material_type === 'video' ? "Ko'rish" : "Yuklab olish"}
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -389,81 +779,134 @@ export function ProfileTabs() {
               <Wallet className="mr-2 h-5 w-5 text-blue-500" />
               To'lovlar tarixi
             </CardTitle>
-            <CardDescription>Hisobingiz bo'yicha barcha operatsiyalar</CardDescription>
+            <CardDescription>
+              Hisobingiz bo'yicha barcha operatsiyalar
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => router.push("/payments/all")}>
+                  <Button
+                    variant={activePaymentTypeFilter === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setActivePaymentTypeFilter("all")}
+                  >
                     Barchasi
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => router.push("/payments/income")}>
+                  <Button
+                    variant={activePaymentTypeFilter === "income" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setActivePaymentTypeFilter("income")}
+                  >
                     Kirim
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => router.push("/payments/expense")}>
+                  <Button
+                    variant={activePaymentTypeFilter === "expense" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setActivePaymentTypeFilter("expense")}
+                  >
                     Chiqim
                   </Button>
                 </div>
                 <div>
-                  <Button variant="outline" size="sm" onClick={() => router.push("/payments/report")}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push("/payments/report")}
+                  >
                     <Download className="mr-2 h-4 w-4" />
                     Hisobot
                   </Button>
                 </div>
               </div>
 
-              <div className="border rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-muted/50">
-                        <th className="text-left p-3 font-medium">Sana</th>
-                        <th className="text-left p-3 font-medium">Tavsif</th>
-                        <th className="text-left p-3 font-medium">Tur</th>
-                        <th className="text-right p-3 font-medium">Summa</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {transactions.map((transaction, index) => (
-                        <tr key={index} className="border-t">
-                          <td className="p-3">{new Date(transaction.date).toLocaleDateString("uz-UZ")}</td>
-                          <td className="p-3">{transaction.description}</td>
-                          <td className="p-3">
-                            <Badge
-                              variant={transaction.type === "Kirim" ? "outline" : "secondary"}
-                              className={
-                                transaction.type === "Kirim"
-                                  ? "bg-green-50 text-green-700 border-green-200"
-                                  : "bg-red-50 text-red-700 border-red-200"
-                              }
-                            >
-                              {transaction.type}
-                            </Badge>
-                          </td>
-                          <td
-                            className={`p-3 text-right font-medium ${
-                              transaction.amount > 0 ? "text-green-600" : "text-red-600"
-                            }`}
-                          >
-                            {transaction.amount > 0 ? "+" : ""}
-                            {transaction.amount.toLocaleString()} so'm
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              {loadingPayments && (
+                <div className="flex justify-center items-center py-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  <p className="ml-2">To'lovlar yuklanmoqda...</p>
                 </div>
-              </div>
+              )}
+
+              {errorPayments && !loadingPayments && (
+                <div className="flex flex-col justify-center items-center py-10 text-red-600">
+                  <AlertCircle className="h-8 w-8 mb-2" />
+                  <p>{errorPayments}</p>
+                </div>
+              )}
+
+              {!loadingPayments && !errorPayments && payments.length === 0 && (
+                 <div className="text-center py-10">
+                    <p className="text-gray-500">Hozircha to'lovlar mavjud emas.</p>
+                 </div>
+              )}
+              
+              {!loadingPayments && !errorPayments && payments.length > 0 && (
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-muted/50">
+                          <th className="text-left p-3 font-medium">Sana</th>
+                          <th className="text-left p-3 font-medium">Tavsif</th>
+                          <th className="text-left p-3 font-medium">Tur</th>
+                          <th className="text-right p-3 font-medium">Summa</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payments.map((payment) => (
+                          <tr key={payment.id} className="border-t">
+                            <td className="p-3">
+                              {new Date(payment.created_at).toLocaleDateString(
+                                "uz-UZ"
+                              )}
+                            </td>
+                            <td className="p-3">{payment.description}</td>
+                            <td className="p-3">
+                              <Badge
+                                variant={payment.amount_display.startsWith('+') ? "outline" : "secondary"}
+                                className={
+                                  payment.amount_display.startsWith('+')
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-red-50 text-red-700 border-red-200"
+                                }
+                              >
+                                {payment.payment_type_display || payment.payment_type}
+                              </Badge>
+                            </td>
+                            <td
+                              className={`p-3 text-right font-medium ${
+                                payment.amount_display.startsWith('+')
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {payment.amount_display}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               <div className="border rounded-lg p-4">
                 <h3 className="font-medium mb-4">Hisobni to'ldirish</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button variant="outline" className="h-auto py-4 flex flex-col" onClick={() => handleAddFunds(10000)}>
+                  <Button
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col"
+                    onClick={() => handleAddFunds(10000)}
+                  >
                     <span className="text-lg font-bold">10,000</span>
                     <span className="text-sm text-gray-500">so'm</span>
                   </Button>
-                  <Button variant="outline" className="h-auto py-4 flex flex-col" onClick={() => handleAddFunds(50000)}>
+                  <Button
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col"
+                    onClick={() => handleAddFunds(50000)}
+                  >
                     <span className="text-lg font-bold">50,000</span>
                     <span className="text-sm text-gray-500">so'm</span>
                   </Button>
@@ -476,7 +919,10 @@ export function ProfileTabs() {
                     <span className="text-sm text-gray-500">so'm</span>
                   </Button>
                 </div>
-                <Button className="w-full mt-4" onClick={() => router.push("/payments/add")}>
+                <Button
+                  className="w-full mt-4"
+                  onClick={() => router.push("/payments/add")}
+                >
                   To'ldirish
                 </Button>
               </div>
@@ -486,115 +932,189 @@ export function ProfileTabs() {
       </TabsContent>
 
       <TabsContent value="settings">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <GraduationCap className="mr-2 h-5 w-5 text-blue-500" />
-              Shaxsiy ma'lumotlar
-            </CardTitle>
-            <CardDescription>Sizning shaxsiy ma'lumotlaringiz</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">To'liq ism</h3>
-                    <p>{personalInfo.fullName}</p>
+        {(loadingProfile || loadingSettings) && (
+          <div className="flex justify-center items-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <p className="ml-2">Ma'lumotlar yuklanmoqda...</p>
+          </div>
+        )}
+
+        {(errorProfile || errorSettings) && !loadingProfile && !loadingSettings && (
+           <div className="flex flex-col justify-center items-center py-10 text-red-600">
+             <AlertCircle className="h-8 w-8 mb-2" />
+             <p>{errorProfile || errorSettings}</p>
+           </div>
+        )}
+        
+        {!loadingProfile && !errorProfile && userProfile && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <GraduationCap className="mr-2 h-5 w-5 text-blue-500" />
+                Shaxsiy ma'lumotlar
+              </CardTitle>
+              <CardDescription>Sizning shaxsiy ma'lumotlaringiz</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 mb-1">
+                        To'liq ism
+                      </h3>
+                      <p>{userProfile.full_name || "-"}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 mb-1">
+                        Tug'ilgan sana
+                      </h3>
+                      <p>
+                        {userProfile.birth_date
+                          ? new Date(userProfile.birth_date).toLocaleDateString("uz-UZ")
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 mb-1">
+                        Telefon raqam
+                      </h3>
+                      <p>{userProfile.phone_number || "-"}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 mb-1">
+                        Email
+                      </h3>
+                      <p>{userProfile.email || "-"}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 mb-1">
+                        Manzil
+                      </h3>
+                      <p>{userProfile.address || "-"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Tug'ilgan sana</h3>
-                    <p>{new Date(personalInfo.birthDate).toLocaleDateString("uz-UZ")}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Telefon raqam</h3>
-                    <p>{personalInfo.phone}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Email</h3>
-                    <p>{personalInfo.email}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Manzil</h3>
-                    <p>{personalInfo.address}</p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 mb-1">
+                        Maktab
+                      </h3>
+                      <p>{userProfile.school || "-"}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 mb-1">
+                        Sinf
+                      </h3>
+                      <p>{userProfile.grade || "-"}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 mb-1">
+                        Maqsad universitet
+                      </h3>
+                      <p>{userProfile.target_university || "-"}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 mb-1">
+                        Maqsad fakultet
+                      </h3>
+                      <p>{userProfile.target_faculty || "-"}</p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <Button onClick={handleEditProfile}>
+                  Ma'lumotlarni tahrirlash
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!loadingSettings && !errorSettings && userSettings && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Settings className="mr-2 h-5 w-5 text-blue-500" />
+                Umumiy sozlamalar
+              </CardTitle>
+              <CardDescription>Bildirishnomalar, til va boshqa afzalliklar</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Maktab</h3>
-                    <p>{personalInfo.school}</p>
+                    <h3 className="font-medium">Email bildirishnomalari</h3>
+                    <p className="text-sm text-gray-500">
+                      Muhim yangiliklar va hisobotlarni email orqali olish
+                    </p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Sinf</h3>
-                    <p>{personalInfo.grade}</p>
+                    <Button
+                      variant={userSettings.notify_email ? "default" : "outline"}
+                      onClick={() => handleUpdateSetting("notify_email", !userSettings.notify_email)}
+                    >
+                      {userSettings.notify_email ? "Yoqilgan" : "Yoqish"}
+                    </Button>
+                  </div>
+                </div>
+                 <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Ikki faktorli autentifikatsiya</h3>
+                    <p className="text-sm text-gray-500">
+                      Hisobingiz xavfsizligini oshirish
+                    </p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Maqsad universitet</h3>
-                    <p>{personalInfo.targetUniversity}</p>
+                     <Button
+                      variant={userSettings.two_factor_enabled ? "default" : "outline"}
+                      onClick={() => {
+                        handleUpdateSetting("two_factor_enabled", !userSettings.two_factor_enabled)
+                      }}
+                    >
+                      {userSettings.two_factor_enabled ? "O'chirish" : "Yoqish"}
+                    </Button>
+                  </div>
+                </div>
+                 <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Til</h3>
+                    <p className="text-sm text-gray-500">
+                      Platforma interfeysi tili ({userSettings.language || "uz"})
+                    </p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Maqsad fakultet</h3>
-                    <p>{personalInfo.targetFaculty}</p>
+                     <Button
+                      variant="outline"
+                      onClick={() => {
+                        alert("Tilni o'zgartirish funksiyasi keyinroq qo'shiladi.")
+                      }}
+                    >
+                      O'zgartirish
+                    </Button>
                   </div>
                 </div>
               </div>
-
-              <Button onClick={handleEditProfile}>Ma'lumotlarni tahrirlash</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="mt-6">
+            </CardContent>
+          </Card>
+        )}
+         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center">
               <BarChart className="mr-2 h-5 w-5 text-blue-500" />
-              Statistika sozlamalari
+              Xavfsizlik
             </CardTitle>
-            <CardDescription>Statistika va tahlil sozlamalari</CardDescription>
+            <CardDescription>Parolni o'zgartirish</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Haftalik hisobotlar</h3>
-                  <p className="text-sm text-gray-500">Har hafta o'qish statistikasi bo'yicha hisobot olish</p>
-                </div>
-                <div>
-                  <Button variant="outline" onClick={() => router.push("/settings/reports")}>
-                    Yoqish
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">O'qish eslatmalari</h3>
-                  <p className="text-sm text-gray-500">Muntazam o'qish uchun eslatmalar olish</p>
-                </div>
-                <div>
-                  <Button variant="outline" onClick={() => router.push("/settings/reminders")}>
-                    Yoqish
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Tavsiyalar</h3>
-                  <p className="text-sm text-gray-500">Shaxsiy tavsiyalarni olish</p>
-                </div>
-                <div>
-                  <Button variant="outline" onClick={() => router.push("/settings/recommendations")}>
-                    Yoqilgan
-                  </Button>
-                </div>
-              </div>
-            </div>
+             <Button
+                onClick={() => router.push("/profile/change-password")}
+              >
+                Parolni o'zgartirish
+              </Button>
           </CardContent>
         </Card>
       </TabsContent>
     </Tabs>
-  )
+  );
 }
-

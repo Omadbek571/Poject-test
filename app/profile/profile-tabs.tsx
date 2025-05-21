@@ -47,7 +47,7 @@ export function ProfileTabs() {
 
   const personalInfo = {
     fullName: "Alisher Karimov",
-    birthDate: "2005-03-15",
+    birthDate: "2005-03-15",  
     phone: "+998 90 123 45 67",
     email: "alisher@example.com",
     address: "Toshkent sh., Chilonzor tumani",
