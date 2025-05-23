@@ -575,7 +575,7 @@ export default function DashboardPage() {
                   )) : <p className="text-sm text-gray-500">So'nggi faoliyat mavjud emas.</p>}
 
                   <div className="flex justify-center">
-                    <Button variant="outline" onClick={() => router.push("/profile/tests")}>
+                    <Button variant="outline" onClick={() => router.push("/tests/all")}>
                       Barcha testlarni ko'rish
                     </Button>
                   </div>
@@ -628,7 +628,7 @@ export default function DashboardPage() {
                     </div>
                 )}
                 <div className="flex justify-center mt-4">
-                  <Button variant="outline" onClick={() => router.push("/tests/recommended")}>
+                  <Button variant="outline" onClick={() => router.push("/tests/all")}>
                     Ko'proq tavsiyalar
                   </Button>
                 </div>
